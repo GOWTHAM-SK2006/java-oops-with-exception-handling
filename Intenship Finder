@@ -1,0 +1,363 @@
+import java.util.*;
+
+class InvalidEmailException extends Exception {
+    public InvalidEmailException(String message) {
+        super(message);
+    }
+}
+
+class InternshipNotFoundException extends Exception {
+    public InternshipNotFoundException(String message) {
+        super(message);
+    }
+}
+
+class AlreadyAppliedException extends Exception {
+    public AlreadyAppliedException(String message) {
+        super(message);
+    }
+}
+
+abstract class Internship {
+    protected int id;
+    protected String title;
+    protected double stipend;
+    protected int duration;
+
+    public Internship(int id, String title, double stipend, int duration) {
+        this.id = id;
+        this.title = title;
+        this.stipend = stipend;
+        this.duration = duration;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public abstract void getDetails();
+}
+
+class TechnicalInternship extends Internship {
+    private String techStack;
+
+    public TechnicalInternship(int id, String title, double stipend, int duration, String techStack) {
+        super(id, title, stipend, duration);
+        this.techStack = techStack;
+    }
+
+    @Override
+    public void getDetails() {
+        System.out.println("ID: " + id + " | Title: " + title + " | Stipend: " + stipend +
+                " | Duration: " + duration + " weeks | Tech Stack: " + techStack);
+    }
+}
+
+class NonTechnicalInternship extends Internship {
+    private String field;
+
+    public NonTechnicalInternship(int id, String title, double stipend, int duration, String field) {
+        super(id, title, stipend, duration);
+        this.field = field;
+    }
+
+    @Override
+    public void getDetails() {
+        System.out.println("ID: " + id + " | Title: " + title + " | Stipend: " + stipend +
+                " | Duration: " + duration + " weeks | Field: " + field);
+    }
+}
+
+class Application {
+    private Student student;
+    private Internship internship;
+    private String status;
+
+    public Application(Student student, Internship internship) {
+        this.student = student;
+        this.internship = internship;
+        this.status = "Applied";
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public void showApplication() {
+        System.out.println("Student: " + student.getName() + " | Internship: " + internship.title + " | Status: " + status);
+    }
+
+    public Internship getInternship() {
+        return internship;
+    }
+}
+
+class Student {
+    private int id;
+    private String name;
+    private String email;
+    private List<Application> appliedInternships;
+
+    public Student(int id, String name, String email) throws InvalidEmailException {
+        this.id = id;
+        this.name = name;
+        setEmail(email);
+        this.appliedInternships = new ArrayList<>();
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setEmail(String email) throws InvalidEmailException {
+        if (!email.contains("@") || !email.contains(".")) {
+            throw new InvalidEmailException("Invalid email format!");
+        }
+        this.email = email;
+    }
+
+    public void applyInternship(Internship internship) throws AlreadyAppliedException {
+        for (Application app : appliedInternships) {
+            if (app.getInternship().getId() == internship.getId()) {
+                throw new AlreadyAppliedException("You have already applied for this internship!");
+            }
+        }
+        Application newApp = new Application(this, internship);
+        appliedInternships.add(newApp);
+        System.out.println("Successfully applied for internship: " + internship.title);
+    }
+
+    public void viewAppliedInternships() {
+        if (appliedInternships.isEmpty()) {
+            System.out.println("No applications yet.");
+            return;
+        }
+        System.out.println("Applied Internships:");
+        for (Application app : appliedInternships) {
+            app.showApplication();
+        }
+    }
+}
+
+class Company {
+    private int id;
+    private String name;
+    private List<Internship> postedInternships;
+
+    public Company(int id, String name) {
+        this.id = id;
+        this.name = name;
+        this.postedInternships = new ArrayList<>();
+    }
+
+    public void postInternship(Internship internship) {
+        postedInternships.add(internship);
+        System.out.println("Internship posted successfully: " + internship.title);
+    }
+
+    public List<Internship> getPostedInternships() {
+        return postedInternships;
+    }
+}
+
+class InternshipPortal {
+    private List<Student> students;
+    private List<Company> companies;
+    private Scanner sc;
+
+    public InternshipPortal() {
+        students = new ArrayList<>();
+        companies = new ArrayList<>();
+        sc = new Scanner(System.in);
+    }
+
+    public void registerStudent() {
+        try {
+            System.out.print("Enter Student ID: ");
+            int id = Integer.parseInt(sc.nextLine());
+            System.out.print("Enter Name: ");
+            String name = sc.nextLine();
+            System.out.print("Enter Email: ");
+            String email = sc.nextLine();
+            Student student = new Student(id, name, email);
+            students.add(student);
+            System.out.println("Student registered successfully!");
+        } catch (InvalidEmailException e) {
+            System.out.println(e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input!");
+        }
+    }
+
+    public void registerCompany() {
+        try {
+            System.out.print("Enter Company ID: ");
+            int id = Integer.parseInt(sc.nextLine());
+            System.out.print("Enter Company Name: ");
+            String name = sc.nextLine();
+            Company company = new Company(id, name);
+            companies.add(company);
+            System.out.println("Company registered successfully!");
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input!");
+        }
+    }
+
+    public void postInternship() {
+        if (companies.isEmpty()) {
+            System.out.println("No companies registered yet!");
+            return;
+        }
+        try {
+            System.out.print("Enter Company ID: ");
+            int companyId = Integer.parseInt(sc.nextLine());
+            Company company = null;
+            for (Company c : companies) {
+                company = c;
+                break;
+            }
+            if (company == null) {
+                System.out.println("Company not found!");
+                return;
+            }
+            System.out.print("Enter Internship ID: ");
+            int id = Integer.parseInt(sc.nextLine());
+            System.out.print("Enter Title: ");
+            String title = sc.nextLine();
+            System.out.print("Enter Stipend: ");
+            double stipend = Double.parseDouble(sc.nextLine());
+            System.out.print("Enter Duration (weeks): ");
+            int duration = Integer.parseInt(sc.nextLine());
+            System.out.print("Technical or Non-Technical (T/N): ");
+            String type = sc.nextLine();
+            Internship internship;
+            if (type.equalsIgnoreCase("T")) {
+                System.out.print("Enter Tech Stack: ");
+                String tech = sc.nextLine();
+                internship = new TechnicalInternship(id, title, stipend, duration, tech);
+            } else {
+                System.out.print("Enter Field: ");
+                String field = sc.nextLine();
+                internship = new NonTechnicalInternship(id, title, stipend, duration, field);
+            }
+            company.postInternship(internship);
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void browseInternships() {
+        if (companies.isEmpty()) {
+            System.out.println("No internships available.");
+            return;
+        }
+        System.out.println("Available Internships:");
+        for (Company c : companies) {
+            for (Internship i : c.getPostedInternships()) {
+                i.getDetails();
+            }
+        }
+    }
+
+    public void applyInternship() {
+        if (students.isEmpty()) {
+            System.out.println("No students registered yet!");
+            return;
+        }
+        browseInternships();
+        try {
+            System.out.print("Enter Student ID: ");
+            int studentId = Integer.parseInt(sc.nextLine());
+            Student student = null;
+            for (Student s : students) {
+                student = s;
+                break;
+            }
+            if (student == null) {
+                System.out.println("Student not found!");
+                return;
+            }
+            System.out.print("Enter Internship ID to apply: ");
+            int internshipId = Integer.parseInt(sc.nextLine());
+            Internship internship = null;
+            for (Company c : companies) {
+                for (Internship i : c.getPostedInternships()) {
+                    if (i.getId() == internshipId) {
+                        internship = i;
+                        break;
+                    }
+                }
+            }
+            if (internship == null) {
+                throw new InternshipNotFoundException("Internship not found!");
+            }
+            student.applyInternship(internship);
+        } catch (AlreadyAppliedException | InternshipNotFoundException e) {
+            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void viewApplications() {
+        if (students.isEmpty()) {
+            System.out.println("No students registered!");
+            return;
+        }
+        try {
+            System.out.print("Enter Student ID: ");
+            int studentId = Integer.parseInt(sc.nextLine());
+            Student student = null;
+            for (Student s : students) {
+                student = s;
+                break;
+            }
+            if (student == null) {
+                System.out.println("Student not found!");
+                return;
+            }
+            student.viewAppliedInternships();
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void menu() {
+        while (true) {
+            System.out.println("\n====== Internship Finder Portal ======");
+            System.out.println("1. Register Student");
+            System.out.println("2. Register Company");
+            System.out.println("3. Post Internship");
+            System.out.println("4. Browse Internships");
+            System.out.println("5. Apply Internship");
+            System.out.println("6. View Applications");
+            System.out.println("7. Exit");
+            System.out.print("Enter choice: ");
+            try {
+                int choice = Integer.parseInt(sc.nextLine());
+                switch (choice) {
+                    case 1 -> registerStudent();
+                    case 2 -> registerCompany();
+                    case 3 -> postInternship();
+                    case 4 -> browseInternships();
+                    case 5 -> applyInternship();
+                    case 6 -> viewApplications();
+                    case 7 -> {
+                        System.out.println("Exiting...");
+                        return;
+                    }
+                    default -> System.out.println("Invalid choice!");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input!");
+            }
+        }
+    }
+}
+
+public class InternshipFinderApp {
+    public static void main(String[] args) {
+        InternshipPortal portal = new InternshipPortal();
+        portal.menu();
+    }
+}
