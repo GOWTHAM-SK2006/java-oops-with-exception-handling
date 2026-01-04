@@ -1,0 +1,157 @@
+import java.util.*;
+
+class PatientNotFoundException extends Exception {
+    public PatientNotFoundException(String msg) { super(msg); }
+}
+
+class DoctorNotFoundException extends Exception {
+    public DoctorNotFoundException(String msg) { super(msg); }
+}
+
+class AlreadyAssignedException extends Exception {
+    public AlreadyAssignedException(String msg) { super(msg); }
+}
+
+class Person {
+    protected String name;
+}
+
+class Patient extends Person {
+    private String patientId;
+    private Doctor assignedDoctor = null;
+    public Patient(String name, String patientId) {
+        this.name = name;
+        this.patientId = patientId;
+    }
+    public String getPatientId() { return patientId; }
+    public Doctor getAssignedDoctor() { return assignedDoctor; }
+    public void assignDoctor(Doctor d) { assignedDoctor = d; }
+    public void discharge() { assignedDoctor = null; }
+}
+
+class Doctor extends Person {
+    private String doctorId;
+    private String specialization;
+    public Doctor(String name, String doctorId, String specialization) {
+        this.name = name;
+        this.doctorId = doctorId;
+        this.specialization = specialization;
+    }
+    public String getDoctorId() { return doctorId; }
+    public String getSpecialization() { return specialization; }
+}
+
+abstract class HospitalTransaction {
+    abstract void execute() throws Exception;
+}
+
+class AssignDoctorTransaction extends HospitalTransaction {
+    private Patient patient;
+    private Doctor doctor;
+    public AssignDoctorTransaction(Patient patient, Doctor doctor) {
+        this.patient = patient;
+        this.doctor = doctor;
+    }
+    public void execute() throws AlreadyAssignedException {
+        if (patient.getAssignedDoctor() != null)
+            throw new AlreadyAssignedException("Patient already assigned to a doctor!");
+        patient.assignDoctor(doctor);
+        System.out.println("Doctor " + doctor.name + " assigned to patient " + patient.name);
+    }
+}
+
+class DischargePatientTransaction extends HospitalTransaction {
+    private Patient patient;
+    public DischargePatientTransaction(Patient patient) { this.patient = patient; }
+    public void execute() {
+        patient.discharge();
+        System.out.println("Patient " + patient.name + " discharged successfully!");
+    }
+}
+
+public class HospitalManagementSystem {
+    static Scanner sc = new Scanner(System.in);
+    static HashMap<String, Patient> patients = new HashMap<>();
+    static HashMap<String, Doctor> doctors = new HashMap<>();
+
+    public static void main(String[] args) {
+        while (true) {
+            System.out.println("\n--- HOSPITAL MANAGEMENT SYSTEM ---");
+            System.out.println("1. Add Patient");
+            System.out.println("2. Add Doctor");
+            System.out.println("3. Assign Doctor to Patient");
+            System.out.println("4. Discharge Patient");
+            System.out.println("5. View Patients");
+            System.out.println("6. Exit");
+            System.out.print("Choice: ");
+
+            int ch = sc.nextInt();
+            sc.nextLine();
+
+            try {
+                switch (ch) {
+                    case 1 -> addPatient();
+                    case 2 -> addDoctor();
+                    case 3 -> assignDoctor();
+                    case 4 -> dischargePatient();
+                    case 5 -> viewPatients();
+                    case 6 -> System.exit(0);
+                    default -> System.out.println("Invalid choice");
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    static void addPatient() {
+        System.out.print("Patient Name: ");
+        String name = sc.nextLine();
+        System.out.print("Patient ID: ");
+        String id = sc.nextLine();
+        patients.put(id, new Patient(name, id));
+        System.out.println("Patient added successfully!");
+    }
+
+    static void addDoctor() {
+        System.out.print("Doctor Name: ");
+        String name = sc.nextLine();
+        System.out.print("Doctor ID: ");
+        String id = sc.nextLine();
+        System.out.print("Specialization: ");
+        String spec = sc.nextLine();
+        doctors.put(id, new Doctor(name, id, spec));
+        System.out.println("Doctor added successfully!");
+    }
+
+    static void assignDoctor() throws Exception {
+        System.out.print("Patient ID: ");
+        String pid = sc.nextLine();
+        if (!patients.containsKey(pid)) throw new PatientNotFoundException("Patient not found");
+
+        System.out.print("Doctor ID: ");
+        String did = sc.nextLine();
+        if (!doctors.containsKey(did)) throw new DoctorNotFoundException("Doctor not found");
+
+        AssignDoctorTransaction t = new AssignDoctorTransaction(patients.get(pid), doctors.get(did));
+        t.execute();
+    }
+
+    static void dischargePatient() throws Exception {
+        System.out.print("Patient ID: ");
+        String pid = sc.nextLine();
+        if (!patients.containsKey(pid)) throw new PatientNotFoundException("Patient not found");
+
+        DischargePatientTransaction t = new DischargePatientTransaction(patients.get(pid));
+        t.execute();
+    }
+
+    static void viewPatients() {
+        if (patients.isEmpty()) { System.out.println("No patients found!"); return; }
+        for (Patient p : patients.values()) {
+            System.out.print("Patient: " + p.name + " | ID: " + p.getPatientId());
+            System.out.println(" | Assigned Doctor: " +
+                    (p.getAssignedDoctor() == null ? "None" : p.getAssignedDoctor().name));
+        }
+    }
+}
