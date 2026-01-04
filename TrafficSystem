@@ -1,0 +1,173 @@
+import java.util.*;
+
+class InvalidLicenseException extends Exception {
+    public InvalidLicenseException(String msg) {
+        super(msg);
+    }
+}
+
+class LicenseSuspendedException extends Exception {
+    public LicenseSuspendedException(String msg) {
+        super(msg);
+    }
+}
+
+
+class Person {
+    protected String name;
+    protected int age;
+}
+
+
+class Driver extends Person {
+    private String licenseNo;
+    private boolean active = true;
+    private int violations = 0;
+
+    public Driver(String name, int age, String licenseNo) {
+        this.name = name;
+        this.age = age;
+        this.licenseNo = licenseNo;
+    }
+
+    public String getLicenseNo() {
+        return licenseNo;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public int getViolations() {
+        return violations;
+    }
+
+    public void addViolation() {
+        violations++;
+        if (violations >= 3) {
+            active = false;
+        }
+    }
+}
+
+
+abstract class Violation {
+    protected int fine;
+    abstract void calculateFine();
+
+    public int getFine() {
+        return fine;
+    }
+}
+
+class SpeedViolation extends Violation {
+    public void calculateFine() {
+        fine = 2000;
+    }
+}
+
+class SignalViolation extends Violation {
+    public void calculateFine() {
+        fine = 1500;
+    }
+}
+
+public class TrafficSystem {
+
+    static Scanner sc = new Scanner(System.in);
+    static HashMap<String, Driver> drivers = new HashMap<>();
+
+    public static void main(String[] args) {
+
+        while (true) {
+            System.out.println("\n--- TRAFFIC MANAGEMENT SYSTEM ---");
+            System.out.println("1. Add Driver");
+            System.out.println("2. Register Violation");
+            System.out.println("3. View Drivers");
+            System.out.println("4. Exit");
+            System.out.print("Choice: ");
+
+            int ch = sc.nextInt();
+            sc.nextLine(); // clear buffer
+
+            try {
+                switch (ch) {
+                    case 1 -> addDriver();
+                    case 2 -> registerViolation();
+                    case 3 -> viewDrivers();
+                    case 4 -> System.exit(0);
+                    default -> System.out.println("Invalid choice");
+                }
+            } catch (Exception e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+
+    static void addDriver() {
+        System.out.print("Name: ");
+        String name = sc.nextLine();
+        System.out.print("Age: ");
+        int age = sc.nextInt();
+        sc.nextLine(); // clear buffer
+        System.out.print("License No: ");
+        String lic = sc.nextLine();
+
+        drivers.put(lic, new Driver(name, age, lic));
+        System.out.println("Driver added successfully!");
+    }
+
+    static void registerViolation()
+            throws InvalidLicenseException, LicenseSuspendedException {
+
+        System.out.print("License No: ");
+        String lic = sc.nextLine();
+
+        if (!drivers.containsKey(lic)) {
+            throw new InvalidLicenseException("License not found");
+        }
+
+        Driver d = drivers.get(lic);
+
+        if (!d.isActive()) {
+            throw new LicenseSuspendedException("License suspended");
+        }
+
+        System.out.println("1. Speed Violation");
+        System.out.println("2. Signal Jump");
+        System.out.print("Choose violation: ");
+        int vtype = sc.nextInt();
+        sc.nextLine(); // clear buffer
+
+        Violation v;
+        if (vtype == 1) v = new SpeedViolation();
+        else v = new SignalViolation();
+
+        v.calculateFine();
+        d.addViolation();
+
+        System.out.println("Fine Amount: ₹" + v.getFine());
+        System.out.println("Total Violations: " + d.getViolations());
+
+        if (!d.isActive()) {
+            System.out.println("⚠ License suspended due to 3 violations");
+        }
+    }
+
+    static void viewDrivers() {
+        if (drivers.isEmpty()) {
+            System.out.println("No drivers found!");
+            return;
+        }
+
+        for (Driver d : drivers.values()) {
+            System.out.println(
+                "Name: " + d.name +
+                " | License: " + d.getLicenseNo() +
+                " | Violations: " + d.getViolations() +
+                " | Active: " + d.isActive()
+            );
+        }
+    }
+}
